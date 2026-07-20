@@ -231,3 +231,83 @@ print(X_recovered[:3])
 print("diferencia maxima absoluta entre original y recuperado:", np.max(np.abs(X - X_recovered)))
 
 """¿se pueden recuperar los datos originales conociendo P? si con X_transformado @ P_inv = X @ P @ P_inv = X @ I = X"""
+
+"""--- 1. prueba de que la ofuscacion funciona con regresion lineal (demostracion analitica) ---
+con datos originales: w = (X.T X)^-1 X.T y ; a = X w
+ofuscando con X' = X P, el nuevo modelo da: w' = ((XP).T (XP))^-1 (XP).T y = (P.T X.T X P)^-1 P.T X.T y
+usando (AB)^-1 = B^-1 A^-1 y (AB).T = B.T A.T:
+w' = P^-1 (X.T X)^-1 (P.T)^-1 P.T X.T y = P^-1 (X.T X)^-1 X.T y = P^-1 w
+entonces w' = P^-1 w.
+prediccion con datos ofuscados: a' = X' w' = (X P)(P^-1 w) = X (P P^-1) w = X w = a
+las predicciones a' son identicas a las predicciones a con datos originales. como y no cambia (solo se ofuscan las caracteristicas,
+no el objetivo), el RMSE y R2 calculados sobre datos ofuscados deben ser exactamente iguales a los calculados sobre datos originales."""
+
+def run_linear_regression(df, obfuscate=False, P=None, seed=12345):
+    """
+    entrena y evalua MyLinearRegression sobre insurance_benefits.
+    si obfuscate=True, multiplica las caracteristicas por la matriz invertible P antes de entrenar.
+    """
+    X = df[personal_info_column_list].to_numpy().astype(float)
+    y = df["insurance_benefits"].to_numpy()
+
+    if obfuscate:
+        X = X @ P
+    
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=seed)
+
+    model = MyLinearRegression()
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+
+    rmse = math.sqrt(sklearn.metrics.mean_squared_error(y_test, y_pred))
+    r2 = sklearn.metrics.r2_score(y_test, y_pred)
+
+    return y_pred, rmse, r2
+
+y_pred_original, rmse_original, r2_original = run_linear_regression(df, obfuscate=False)
+y_pred_ofuscado, rmse_ofuscado, r2_ofuscado = run_linear_regression(df, obfuscate=True, P=P)
+
+print("--- datos originales ---")
+print(f"RMSE: {rmse_original:.4f}")
+print(f"R2: {r2_original:.4f}")
+
+print("--- datos ofuscados (X @ P) ---")
+print(f"RMSE: {rmse_ofuscado:.4f}")
+print(f"R2: {r2_ofuscado:.4f}")
+
+print("diferencia maxima absoluta entre predicciones:", np.max(np.abs(y_pred_original - y_pred_ofuscado)))
+
+
+# ---- parte final
+
+# # no, la ofuscacion no afecta en nada la calidad de la regresion lineal. si multiplico las caracteristicas por una matriz P invertible, lo unico que pasa es que el modelo ajusta sus pesos para compensar esa transformacion, los pesos nuevos terminan siendo P^-1 multiplicado por los pesos originales. como se compensa exactamente, las predicciones que da el modelo con los datos ofuscados son identicas a las que da con los datos originales, entonces el RECM tampoco cambia. por eso se puede ofuscar sin miedo a que el modelo empeore.
+
+# # con los datos originales
+# w = (X.T X)^-1 X.T y
+
+# si ofusco las caracteristicas con X' = X @ P, el modelo entrenado con esos datos calcula otros pesos
+# w_P = ((XP).T XP)^-1 (XP).T y
+
+# aplico (AB).T = B.T A.T al termino (XP).T:
+# w_P = (P.T X.T X P)^-1 P.T X.T y
+
+# aplico (AB)^-1 = B^-1 A^-1 dos veces seguidas para separar la inversa del producto de matrices:
+# (P.T X.T X P)^-1 = P^-1 (X.T X)^-1 (P.T)^-1
+
+# sustituyendo:
+# w_P = P^-1 (X.T X)^-1 (P.T)^-1 P.T X.T y
+
+# como (P.T)^-1 P.T = I (matriz identidad), esos dos terminos se cancelan:
+# w_P = P^-1 (X.T X)^-1 X.T y = P^-1 w
+
+# entonces w_P = P^-1 * w, o sea que los pesos con datos ofuscados son los pesos originales multiplicados por P^-1.
+
+# ahora reviso las predicciones con los datos ofuscados:
+# a_P = (XP) w_P = (XP)(P^-1 w) = X (P P^-1) w = X (I) w = X w = a
+
+# o sea que a_P es exactamente igual a (a)
+
+# como (y) nunca se toca, solo se ofuscan las caracteristicas, y las predicciones son iguales, entonces el RECM calculado con los datos ofuscados tiene que dar el mismo valor que con los datos originales. la ofuscacion con una matriz P invertible no afecta la calidad del modelo de regresion lineal.
+
+
+
