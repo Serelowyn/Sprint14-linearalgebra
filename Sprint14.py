@@ -199,3 +199,35 @@ eval_regressor(y_test_sc, y_test_pred_sc)
 
 """en ambos casos RMSE y R2 son identicos. los pesos si cambian pero eso se compensa con los pesos, asi que la prediccion final y la metrica de calidad quedan iguales"""
 
+# Tarea 4. Ofuscar datos
+
+personal_info_column_list = ["gender", "age", "income", "family_members"]
+df_pn = df[personal_info_column_list]
+
+X = df_pn.to_numpy()
+print(X[:5])
+
+rng = np.random.default_rng(seed=42)
+P = rng.random(size=(X.shape[1], X.shape[1]))
+print(P)
+
+# comprobar que P sea invertible: si no lo fuera, np.linalg.inv lanzaria un error
+P_inv = np.linalg.inv(P)
+print(np.round(P @ P_inv, 6))
+
+X_transformed = X @ P
+
+print("datos originales (primeras 3 filas):")
+print(X[:3])
+print("datos transformados / ofuscados (primeras 3 filas):")
+print(X_transformed[:3])
+
+"""¿se puede adivinar la edad o los ingresos despues de la transformacion? no. cada columna de X @ P es una combinacion lineal de las 4 caracteristicas originales ponderada por numeros aleatorios, el resultado ya no se parece en escala ni magnitud a una edad o un salario real."""
+
+X_recovered = X_transformed @ P_inv
+
+print("datos recuperados / invertidos (primeras 3 filas):")
+print(X_recovered[:3])
+print("diferencia maxima absoluta entre original y recuperado:", np.max(np.abs(X - X_recovered)))
+
+"""¿se pueden recuperar los datos originales conociendo P? si con X_transformado @ P_inv = X @ P @ P_inv = X @ I = X"""
