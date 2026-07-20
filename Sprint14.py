@@ -20,28 +20,24 @@ from IPython.display import display
 
 df = pd.read_csv(r'C:\Users\sasor\Desktop\Tripleten\Sprint 14\Proyecto\insurance_us.csv')
 
-#2. Verifica que los datos no tengan problemas: no faltan datos, no hay valores extremos, etc.
+# 2. Verifica que los datos no tengan problemas: no faltan datos, no hay valores extremos, etc. 
 
-# Renombramos las columnas para que el código se vea más coherente con su estilo.
+"""primero para revisar"""
+print(df.sample(10))
+print(df.info())
+print(df.dtypes)
+print(df.isnull().sum())
+
 df = df.rename(columns={'Gender': 'gender', 'Age': 'age', 'Salary': 'income', 'Family members': 'family_members', 'Insurance benefits': 'insurance_benefits'})
 
-df.sample(10)
+"""se pasa age de float a int, ya que su naturaleza es: entero de anios, no hay decimales ni fracciones."""
+df["age"] = df["age"].astype(int)
+print(df["age"].dtype)
+ 
+print(df.describe())
 
-df.info()
+"""para comprobar"""
+print(df.dtypes)
+print(df.sample(10))
 
-# puede que queramos cambiar el tipo de edad (de float a int) aunque esto no es crucial
-
-# escribe tu conversión aquí si lo deseas:
-
-# comprueba que la conversión se haya realizado con éxito
-
-# ahora echa un vistazo a las estadísticas descriptivas de los datos.
-# ¿Se ve todo bien?
-
-
-# 3. Análisis exploratorio de datos
-
-
-g = sns.pairplot(df, kind='hist')
-g.fig.set_size_inches(12, 12)
-
+"""no hay nulos en ninguna columna"""
