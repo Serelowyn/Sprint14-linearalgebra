@@ -309,5 +309,41 @@ print("diferencia maxima absoluta entre predicciones:", np.max(np.abs(y_pred_ori
 
 # como (y) nunca se toca, solo se ofuscan las caracteristicas, y las predicciones son iguales, entonces el RECM calculado con los datos ofuscados tiene que dar el mismo valor que con los datos originales. la ofuscacion con una matriz P invertible no afecta la calidad del modelo de regresion lineal.
 
+"""2. Prueba de regresión lineal con ofuscación de datos"""
+rng = np.random.default_rng(seed=42)
+P = rng.random(size=(X.shape[1], X.shape[1]))
+
+# comprobar que P sea invertible: si no lo fuera, np.linalg.inv lanzaria un error
+P_inv = np.linalg.inv(P)
+print(np.round(P @ P_inv, 6))
+
+def run_linear_regression(df, obfuscate=False, P=None, seed=12345):
+    X = df[personal_info_column_list].to_numpy().astype(float)
+    y = df["insurance_benefits"].to_numpy()
+
+    if obfuscate:
+        X = X @ P
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=seed)
+
+    model = MyLinearRegression()
+    model.fit(X_train, y_train)
+    y_pred = model.predict(X_test)
+
+    rmse = math.sqrt(sklearn.metrics.mean_squared_error(y_test, y_pred))
+    r2 = sklearn.metrics.r2_score(y_test, y_pred)
+
+    return y_pred, rmse, r2
 
 
+y_pred_original, rmse_original, r2_original = run_linear_regression(df, obfuscate=False)
+"""datos originales"""
+print(f"RMSE: {rmse_original:.4f}")
+print(f"R2: {r2_original:.4f}")
+
+y_pred_ofuscado, rmse_ofuscado, r2_ofuscado = run_linear_regression(df, obfuscate=True, P=P)
+"""datos ofuscados (X @ P)"""
+print(f"RMSE: {rmse_ofuscado:.4f}")
+print(f"R2: {r2_ofuscado:.4f}")
+
+print("diferencia entre predicciones:", np.max(np.abs(y_pred_original - y_pred_ofuscado)))
