@@ -2,7 +2,7 @@
 
 import numpy as np
 import pandas as pd
-
+from matplotlib import pyplot as plt
 import seaborn as sns
 
 import sklearn.linear_model
@@ -41,3 +41,11 @@ print(df.dtypes)
 print(df.sample(10))
 
 """no hay nulos en ninguna columna"""
+
+# 3. Analisis exploratorio de datos
+
+g = sns.pairplot(df, kind="hist")
+g.fig.set_size_inches(12, 12)
+plt.show()
+ 
+"""es dificil detectar grupos obvios viendo cada tabla con distintas combinaciones de variables por separado, porque la similitud entre clientes depende de todas. por eso conviene usar (kNN) que combine todas las caracteristicas en una sola metrica de similitud."""
