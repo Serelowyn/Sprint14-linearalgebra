@@ -95,3 +95,59 @@ print(get_knn(df_scaled, 0, 5, "manhattan"))
 
 """¿que tan similares son los resultados con manhattan (independiente del escalado)?
 son parecidos a la distancia euclidiana. con pocas caracteristicas y datos continuos, ambas metricas terminan ordenando a los clientes de forma muy parecida pero la diferencia se nota mas en el valor exacto de la distancia que en el conjunto de vecinos elegido lo cual da por conclusion que el escalado es lo que mas cambia el resultado de knn, la metrica de distancia importa menos."""
+
+# Tarea 2. ¿Es probable que el cliente reciba una prestacion del seguro?
+
+df["insurance_benefits_received"] = (df["insurance_benefits"] > 0).astype(int)
+
+print(df["insurance_benefits_received"].value_counts(normalize=True))
+
+"""se confirma el desbalance: ~88.7% de los clientes no recibio ninguna prestacion (clase 0) y solo ~11.3% si (clase 1)."""
+
+def eval_classifier(y_true, y_pred):
+    f1_score = sklearn.metrics.f1_score(y_true, y_pred)
+    print(f"F1: {f1_score:.2f}")
+ 
+    cm = sklearn.metrics.confusion_matrix(y_true, y_pred, normalize="all")
+    print("Matriz de confusion")
+    print(cm)
+
+def rnd_model_predict(P, size, seed=42):
+    rng = np.random.default_rng(seed=seed)
+    return rng.binomial(n=1, p=P, size=size)
+
+for P in [0, df["insurance_benefits_received"].sum() / len(df), 0.5, 1]:
+    print(f"la probabilidad: {P:.2f}")
+    y_pred_rnd = rnd_model_predict(P, len(df))
+ 
+    eval_classifier(df["insurance_benefits_received"], y_pred_rnd)
+ 
+    print()
+
+"""el modelo dummy con P=0 nunca predice prestacion, F1=0 con P=1 siempre predice prestacion, F1 bajo con 0.20 por muchos falsos positivos. con P=0.5 el F1 es similar (0.20). con P = 0.11 el F1 es apenas 0.12 esta es la base de comparacion para la tarea 2."""
+
+X = df[feature_names]
+y = df["insurance_benefits_received"]
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=12345)
+
+print("--- knn clasificador, sin escalar ---")
+for k in range(1, 11):
+    knn = sklearn.neighbors.KNeighborsClassifier(n_neighbors=k)
+    knn.fit(X_train, y_train)
+    y_pred = knn.predict(X_test)
+    f1 = sklearn.metrics.f1_score(y_test, y_pred)
+    print(f"k={k}: F1={f1:.3f}")
+
+X_scaled = df_scaled[feature_names]
+X_train_s, X_test_s, y_train_s, y_test_s = train_test_split(X_scaled, y, test_size=0.3, random_state=12345)
+
+print("--- knn clasificador, escalado ---")
+for k in range(1, 11):
+    knn = sklearn.neighbors.KNeighborsClassifier(n_neighbors=k)
+    knn.fit(X_train_s, y_train_s)
+    y_pred = knn.predict(X_test_s)
+    f1 = sklearn.metrics.f1_score(y_test_s, y_pred)
+    print(f"k={k}: F1={f1:.3f}")
+
+"""¿puede un modelo entrenado funcionar mejor que un dummy? ¿puede funcionar peor?
+si a ambas. sin escalar el knn entrenado va de F1=0.62  cuando k=1 , a casi 0 cuandoi k=10, degradandose conforme sube k, porque income domina la distancia igual que en la tarea 1... escalado, el knn entrenado llega a F1 entre 0.88 y 0.97, muy por encima de cualquier dummy"""
