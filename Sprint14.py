@@ -1,5 +1,6 @@
 # ---------------- Importaciones
 
+import math
 import numpy as np
 import pandas as pd
 from matplotlib import pyplot as plt
@@ -151,3 +152,50 @@ for k in range(1, 11):
 
 """¿puede un modelo entrenado funcionar mejor que un dummy? ¿puede funcionar peor?
 si a ambas. sin escalar el knn entrenado va de F1=0.62  cuando k=1 , a casi 0 cuandoi k=10, degradandose conforme sube k, porque income domina la distancia igual que en la tarea 1... escalado, el knn entrenado llega a F1 entre 0.88 y 0.97, muy por encima de cualquier dummy"""
+
+# Tarea 3. Regresion (con regresion lineal)
+
+class MyLinearRegression:
+
+    def __init__(self):
+        self.weights = None
+
+    def fit(self, X, y):
+        # anadir las unidades (columna de unos para el sesgo w0)
+        X2 = np.append(np.ones([len(X), 1]), X, axis=1)
+        self.weights = np.linalg.inv(X2.T.dot(X2)).dot(X2.T).dot(y)
+
+    def predict(self, X):
+        # anadir las unidades
+        X2 = np.append(np.ones([len(X), 1]), X, axis=1)
+        y_pred = X2.dot(self.weights)
+        return y_pred
+
+def eval_regressor(y_true, y_pred):
+    rmse = math.sqrt(sklearn.metrics.mean_squared_error(y_true, y_pred))
+    print(f"RMSE: {rmse:.2f}")
+
+    r2_score = sklearn.metrics.r2_score(y_true, y_pred)
+    print(f"R2: {r2_score:.2f}")
+    
+X = df[["age", "gender", "income", "family_members"]].to_numpy()
+y = df["insurance_benefits"].to_numpy()
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=12345)
+
+lr = MyLinearRegression()
+lr.fit(X_train, y_train)
+print("pesos (w0, w1, w2, w3, w4):", lr.weights)
+y_test_pred = lr.predict(X_test)
+eval_regressor(y_test, y_test_pred)
+
+X_scaled = df_scaled[["age", "gender", "income", "family_members"]].to_numpy()
+X_train_sc, X_test_sc, y_train_sc, y_test_sc = train_test_split(X_scaled, y, test_size=0.3, random_state=12345)
+
+lr_scaled = MyLinearRegression()
+lr_scaled.fit(X_train_sc, y_train_sc)
+print("pesos escalados (w0, w1, w2, w3, w4):", lr_scaled.weights)
+y_test_pred_sc = lr_scaled.predict(X_test_sc)
+eval_regressor(y_test_sc, y_test_pred_sc)
+
+"""en ambos casos RMSE y R2 son identicos. los pesos si cambian pero eso se compensa con los pesos, asi que la prediccion final y la metrica de calidad quedan iguales"""
+
